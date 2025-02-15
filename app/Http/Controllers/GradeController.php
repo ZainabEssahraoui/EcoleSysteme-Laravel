@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Grade;
 use App\Models\User;
 use App\Models\Module;
+use Illuminate\Support\Facades\Auth;
 
 class GradeController extends Controller
 {
@@ -14,7 +15,11 @@ class GradeController extends Controller
      */
     public function index()
     {
-        $grades = Grade::with(['student', 'module'])->get();
+        if (Auth::user()->role === 'student') {
+            $grades = Grade::where('student_id', Auth::id())->with('module')->get();
+        } else {
+            $grades = Grade::with(['student', 'module'])->get();
+        }
         return view('grades.index', compact('grades'));
     }
 
@@ -37,7 +42,7 @@ class GradeController extends Controller
         $validated = $request->validate([
             'student_id' => 'required|exists:users,id',
             'module_id' => 'required|exists:modules,id',
-            'grade' => 'required|numeric|min:0|max:20', // Grades between 0 and 20
+            'grade' => 'required|numeric|min:0|max:20', 
         ]);
 
         Grade::create($validated);

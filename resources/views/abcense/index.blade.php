@@ -4,12 +4,12 @@
 
 @section('content')
     <h2>Absences List</h2>
-    <a href="{{ route('absences.create') }}" class="btn btn-primary mb-3">Record New Absence</a>
-
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
+    @if($absences->isEmpty())
+      <p>Non absences Ajouté </p>
+        @if (auth()->user()->role === 'prof')
+            <a href="{{ route('absences.create') }}" class="btn btn-primary mb-3">Record New Absence</a>
+        @endif
+    @else
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -32,6 +32,7 @@
                     <td>{{ $absence->si_present ? 'Yes' : 'No' }}</td>
                     <td>{{ $absence->reason ?? 'N/A' }}</td>
                     <td>
+                      @if (auth()->user()->role === 'prof')  
                         <a href="{{ route('absences.show', $absence->id) }}" class="btn btn-info btn-sm">View</a>
                         <a href="{{ route('absences.edit', $absence->id) }}" class="btn btn-warning btn-sm">Edit</a>
                         <form action="{{ route('absences.destroy', $absence->id) }}" method="POST" class="d-inline">
@@ -39,9 +40,11 @@
                             @method('DELETE')
                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</button>
                         </form>
+                      @endif   
                     </td>
                 </tr>
             @endforeach
         </tbody>
     </table>
+    @endif
 @endsection

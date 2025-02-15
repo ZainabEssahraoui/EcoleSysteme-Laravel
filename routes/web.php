@@ -4,8 +4,9 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\AbsenceController;
-use App\Http\Controllers\StudentGradeController;
-use App\Http\Controllers\StudentAbsenceController;
+use App\Http\Controllers\GradeController;
+use App\Http\Controllers\AuthenticatedSessionController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -24,53 +25,45 @@ Route::get('/', function () {
 // Dashboard for Professors
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard/prof', function () {
-        return view('dashboard.prof');
+        return view('dashboard.prof', ['user' => auth()->user()]);
     })->name('prof.dashboard');
 });
 
 // Dashboard for Students
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard/student', function () {
-        return view('dashboard.student');
+        return view('dashboard.student', ['user' => auth()->user()]);
     })->name('student.dashboard');
 });
-// Routes pour les étudiants
-Route::middleware(['auth', 'verified', 'role:student'])->group(function () {
-    // CRUD des cours
-    Route::resource('courses', App\Http\Controllers\CourseController::class);
-
-    // Grades routes for the student
-    Route::get('/student/grades', [StudentGradeController::class, 'index'])->name('student.grades.index');
-    Route::get('/student/grades/{id}', [StudentGradeController::class, 'show'])->name('student.grades.show');
-
-    // Absences routes for the student
-    Route::get('/student/absences', [StudentAbsenceController::class, 'index'])->name('student.absences.index');
-    Route::get('/student/absences/{id}', [StudentAbsenceController::class, 'show'])->name('student.absences.show');
-});
 
 
-// Routes pour les professeurs
-Route::middleware(['auth', 'verified', 'role:prof'])->group(function () {
-    // CRUD des notes
-    Route::resource('grades', App\Http\Controllers\GradeController::class);
 
-    // CRUD des absences
-    Route::resource('absences', App\Http\Controllers\AbsenceController::class);
-});
 
-/*Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Routes for Professors
+Route::middleware(['role:prof'])->group(function () {
+    // CRUD for Grades
+    Route::resource('grades', GradeController::class);
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // CRUD for Absences
     Route::resource('absences', AbsenceController::class);
 });
-Route::resource('courses', CourseController::class);
-use App\Http\Controllers\GradeController;
 
-Route::resource('grades', GradeController::class)->middleware('auth');*/
+// Routes for Students
+Route::middleware(['role:student'])->group(function () {
+    // CRUD for Courses
+    Route::resource('courses',CourseController::class);
+
+    // Grades Routes for Student
+    Route::get('/student/grades', [GradeController::class, 'index'])->name('student.grades.index');
+    Route::get('/student/grades/{id}', [GradeController::class, 'show'])->name('student.grades.show');
+
+    // Absences Routes for Student
+    Route::get('/student/absences', [AbsenceController::class, 'index'])->name('student.absences.index');
+    Route::get('/student/absences/{id}', [AbsenceController::class, 'show'])->name('student.absences.show');
+});
+
+
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
 
 require __DIR__.'/auth.php';
