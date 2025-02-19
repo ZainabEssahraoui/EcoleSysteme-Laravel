@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Absence;
 use App\Models\User;
 use App\Models\Group;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
+use App\Models\Absence;
+
 
 class AbsenceController extends Controller
 {
@@ -15,16 +16,25 @@ class AbsenceController extends Controller
      */
     public function index()
     {
-        // If the user is a student show only their absences
+        // Check the role of the authenticated user
         if (Auth::user()->role === 'student') {
-            $absences = Absence::where('student_id', Auth::id())->with(['student', 'group'])->get();
+            // If the user is a student, show only their absences
+            $absences = Absence::where('student_id', Auth::id())
+                               ->with(['student', 'group'])
+                               ->orderBy('date_absence', 'desc')
+                               ->get();
         } else {
-            // Professors can see all absences
-            $absences = Absence::with(['student', 'group'])->get();
+            // If the user is a professor, show only absences they recorded
+            $profId = auth()->user()->id;
+            $absences = Absence::where('prof_id', $profId)
+                               ->with(['student', 'group'])
+                               ->orderBy('date_absence', 'desc')
+                               ->get();
         }
     
         return view('abcense.index', compact('absences'));
     }
+      
     
 
     /**
@@ -32,84 +42,110 @@ class AbsenceController extends Controller
      */
     public function create()
     {
+        // afficher les student de professeur authentifier (son groupe)
+        $profGroupId = Auth::user()->group_id;
+        $students = User::where('role', 'student')->where('group_id', $profGroupId)->get();
         
-        $students = User::where('role', 'student')->get();
-        $groups = Group::all();
-
-        return view('abcense.create', compact('students', 'groups'));
+        // Get the current professor's group
+        $group = Group::find($profGroupId);
+    
+        return view('abcense.create', compact('students', 'group'));
     }
-
+    
+    
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        
-        $validated = $request->validate([
-            'student_id' => 'required|exists:users,id',
-            'group_id' => 'required|exists:groups,id',
-            'heure_debut_scence' => 'required|date_format:H:i',
-            'heure_fin_scence' => 'required|date_format:H:i|after:heure_debut_scence',
-            'si_present' => 'boolean',
-            'reason' => 'nullable|string',
+{
+    $validated = $request->validate([
+        'group_id' => 'required|exists:groups,id',
+        'scence' => 'required|in:1,2,3,4', 
+        'date_absence' => 'required|date',
+        'student_ids' => 'required|array',
+        'si_present' => 'array',
+        'reason' => 'array',
+    ]);
+    
+
+    foreach ($validated['student_ids'] as $studentId) {
+        Absence::create([
+            'student_id' => $studentId,
+            'group_id' => $validated['group_id'],
+            'prof_id' => auth()->user()->id,
+            'scence' => $validated['scence'],
+            'date_absence' => $validated['date_absence'],
+            'si_present' => isset($validated['si_present'][$studentId]) ? 0 : 1,
+            'reason' => $validated['reason'][$studentId] ?? null,
         ]);
-
-        // Assign the logged-in professor's ID
-        $validated['prof_id'] = Auth::id();
-
-        // Create a new absence record
-        Absence::create($validated);
-
-        return redirect()->route('absences.index')->with('success', 'Absence recorded successfully.');
     }
+
+    return redirect()->route('absences.index')->with('success', 'Absences enregistrées avec succès.');
+}
+
+    
 
     /**
      * Display the specified resource.
      */
     public function show(string $id)
     {
-        // Get a specific absence by ID
-        $absence = Absence::findOrFail($id);
-
-        return view('abcense.show', compact('absence'));
+    
     }
 
     /**
      * Show the form for editing the specified resource.
      */
   
-        public function edit(string $id)
-        {
-            $absence = Absence::findOrFail($id);
-            $students = User::where('role', 'student')->get();
-            $groups = Group::all();
+     public function edit($id)
+     {
         
-            return view('abcense.edit', compact('absence', 'students', 'groups'));
-        }
-        
+         $absence = Absence::with(['student', 'group'])->findOrFail($id);
+     
+         // Check if the authenticated user is the professor who recorded this absence
+         if ($absence->prof_id !== auth()->user()->id) {
+             return redirect()->route('absences.index')->with('error', 'Vous n\'avez pas l\'autorisation de modifier cette absence.');
+         }
+     
+         // Get all students in the group
+         $students = User::where('group_id', $absence->group_id)->get();
+     
+         return view('abcense.edit', compact('absence', 'students'));
+     }
+     
     
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
-     
-        $absence = Absence::findOrFail($id);
         $validated = $request->validate([
+            'scence' => 'required|in:1,2,3,4',
+            'date_absence' => 'required|date',
             'student_id' => 'required|exists:users,id',
-            'group_id' => 'required|exists:groups,id',
-            'heure_debut_scence' => 'required|date_format:H:i',
-            'heure_fin_scence' => 'required|date_format:H:i|after:heure_debut_scence',
-            'si_present' => 'boolean',
+            'si_present' => 'nullable',  
             'reason' => 'nullable|string',
         ]);
-        $validated['prof_id'] = Auth::id();
-
-        $absence->update($validated);
-
-        return redirect()->route('absences.index')->with('success', 'Absence updated successfully.');
+    
+        // Find the absence by ID
+        $absence = Absence::findOrFail($id);
+    
+       
+    
+        // Update the absence record
+        $absence->update([
+            'scence' => $validated['scence'],
+            'date_absence' => $validated['date_absence'],
+            'si_present' => isset($validated['si_present']) ? 0 : 1,
+            'reason' => $validated['reason'],
+        ]);
+    
+        // Redirect back with success message
+        return redirect()->route('absences.index')->with('success', 'Absence mise à jour avec succès.');
     }
+    
+    
 
     /**
      * Remove the specified resource from storage.

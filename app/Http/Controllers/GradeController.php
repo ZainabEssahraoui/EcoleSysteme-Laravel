@@ -7,12 +7,97 @@ use App\Models\Grade;
 use App\Models\User;
 use App\Models\Module;
 use Illuminate\Support\Facades\Auth;
+use Box\Spout\Reader\Common\Creator\ReaderEntityFactory;
+use Box\Spout\Writer\Common\Creator\WriterEntityFactory;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class GradeController extends Controller
 {
     /**
      * Display a listing of the grades.
      */
+
+     
+     
+     
+     public function exportPDF()
+     {
+         $grades = Grade::where('student_id', Auth::id())->with('module')->get();
+         
+         $pdf = Pdf::loadView('grades.pdf', compact('grades'));
+         
+         return $pdf->download('student_grades.pdf');
+     }
+public function export()
+{
+    $grades = Grade::with(['student', 'module'])->get();
+
+    $writer = WriterEntityFactory::createXLSXWriter();
+    $filePath = storage_path('grades.xlsx');
+
+    $writer->openToFile($filePath);
+
+    // Ajouter les en-têtes
+    $headerRow = WriterEntityFactory::createRowFromArray(['Student', 'Module', 'Grade']);
+    $writer->addRow($headerRow);
+
+    // Ajouter les données
+    foreach ($grades as $grade) {
+        $row = WriterEntityFactory::createRowFromArray([
+            $grade->student->name,
+            $grade->module->name,
+            $grade->grade
+        ]);
+        $writer->addRow($row);
+    }
+
+    $writer->close();
+
+    return Response::download($filePath)->deleteFileAfterSend(true);
+}
+
+     
+     public function import(Request $request)
+     {
+         $request->validate([
+             'file' => 'required|mimes:xlsx,csv'
+         ]);
+     
+         $filePath = $request->file('file')->store('temp');
+         $fullPath = storage_path('app/' . $filePath);
+     
+         $reader = ReaderEntityFactory::createReaderFromFile($fullPath);
+         $reader->open($fullPath);
+     
+         foreach ($reader->getSheetIterator() as $sheet) {
+             foreach ($sheet->getRowIterator() as $index => $row) {
+                 if ($index === 1) continue; // Ignore l'en-tête
+     
+                 $cells = $row->toArray();
+                 $student = User::where('name', $cells[0])->first();
+                 $module = Module::where('name', $cells[1])->first();
+     
+                 if ($student && $module) {
+                     Grade::create([
+                         'student_id' => $student->id,
+                         'module_id' => $module->id,
+                         'grade' => (float) $cells[2],
+                         'prof_id' => Auth::id(),
+                     ]);
+                 }
+             }
+         }
+     
+         $reader->close();
+         Storage::delete($filePath);
+     
+         return redirect()->route('grades.index')->with('success', 'Grades imported successfully.');
+     }
+     
+
     public function index()
     {
         if (Auth::user()->role === 'student') {
@@ -44,6 +129,7 @@ class GradeController extends Controller
             'module_id' => 'required|exists:modules,id',
             'grade' => 'required|numeric|min:0|max:20', 
         ]);
+        $validated['prof_id'] = Auth::id();
 
         Grade::create($validated);
 
@@ -83,6 +169,7 @@ class GradeController extends Controller
             'module_id' => 'required|exists:modules,id',
             'grade' => 'required|numeric|min:0|max:20',
         ]);
+        $validated['prof_id'] = Auth::id();
 
         $grade->update($validated);
 

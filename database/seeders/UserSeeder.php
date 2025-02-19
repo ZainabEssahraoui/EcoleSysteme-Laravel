@@ -6,7 +6,6 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
-use App\Models\Group; 
 
 class UserSeeder extends Seeder
 {
@@ -19,7 +18,9 @@ class UserSeeder extends Seeder
     {
     
 
-        // Créer des utilisateurs personnalisés
+        
+
+
         $users = [
             [
                 'name' => 'Professeur Ahmed',

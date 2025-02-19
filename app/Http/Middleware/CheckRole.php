@@ -10,14 +10,22 @@ class CheckRole
 {
     public function handle(Request $request, Closure $next, $role)
     {
-        // Get the currently authenticated user
         $user = Auth::user();
-
-        // Check if the user has the correct role
-        if ( $user->role !== $role) {
-            abort(403, 'Unauthorized action.');
+        if (!$user) {
+            return redirect('/login')->with('error', 'Vous devez être connecté.');
+        }
+        if ($user && $user->role === $role) {
+            return $next($request);
         }
 
-        return $next($request);
+        // Redirection en fonction du rôle de l'utilisateur
+        if ($user->role === 'prof') {
+            return redirect()->route('prof.dashboard');
+        } elseif ($user->role === 'student') {
+            return redirect()->route('student.dashboard');
+        }
+
+        // Si l'utilisateur n'a pas de rôle valide, redirigez-le vers une page par défaut
+        return redirect('/');
     }
 }

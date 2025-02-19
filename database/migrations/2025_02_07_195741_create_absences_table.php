@@ -13,8 +13,8 @@ class CreateAbsencesTable extends Migration
             $table->foreignId('student_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('group_id')->constrained('groups')->onDelete('cascade');
             $table->foreignId('prof_id')->constrained('users')->onDelete('cascade');
-            $table->time('heure_debut_scence');
-            $table->time('heure_fin_scence');
+            $table->string('scence');
+            $table->date('date_absence');
             $table->boolean('si_present')->default(false);
             $table->text('reason')->nullable();
             $table->timestamps();

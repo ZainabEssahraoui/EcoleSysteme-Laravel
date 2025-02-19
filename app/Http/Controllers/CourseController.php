@@ -7,15 +7,15 @@ use App\Models\Course;
 use App\Models\Module;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 
 class CourseController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-        $courses = Course::with(['module', 'student'])->get();
+        $user = Auth::user();
+        $courses = Course::where('student_id', $user->id)->with(['module', 'student'])->get();
         return view('course.index', compact('courses'));
     }
 
@@ -38,9 +38,9 @@ class CourseController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'module_id' => 'required|exists:modules,id',
-            'student_id' => 'required|exists:users,id',
             'file' => 'required|file|mimes:pdf,doc,docx|max:2048',
         ]);
+        $validated['student_id'] = Auth::id();
 
         $filePath = null;
         if ($request->hasFile('file')) {
@@ -89,13 +89,13 @@ class CourseController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'module_id' => 'required|exists:modules,id',
-            'student_id' => 'required|exists:users,id',
             'file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
         ]);
-
+        $validated['student_id'] = Auth::id();
+     
         $course = Course::findOrFail($id);
         $filePath = $course->file_path;
-
+        //traitement de supprimmer le fichier anciene 
         if ($request->hasFile('file')) {
             if ($filePath && Storage::disk('public')->exists($filePath)) {
                 Storage::disk('public')->delete($filePath);

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Group;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -24,10 +25,16 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
+            'name' => $this->faker->name(),
+            'email' => $this->faker->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'password' => Hash::make('password'), // Mot de passe par défaut
+            'CIN' => strtoupper($this->faker->bothify('??####')), // Générer un CIN aléatoire
+            'phone' => $this->faker->phoneNumber(),
+            'adresse' => $this->faker->address(),
+            'image' => 'default.png', // Une image par défaut
+            'role' => $this->faker->randomElement(['prof', 'student']),
+            'group_id' => Group::factory(), // Associe un groupe généré via la factory
             'remember_token' => Str::random(10),
         ];
     }

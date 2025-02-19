@@ -1,0 +1,25 @@
+Système de Gestion Scolaire
+Ce projet est une application de gestion scolaire développée avec Laravel 10. Il permet de gérer les étudiants, les professeurs, les groupes, les modules, les notes et les absences.
+ Fonctionnalités Principales
+     Authentification
+* Gestion des utilisateurs avec Laravel Breeze
+* Différenciation des rôles (prof et student)
+* Redirection des utilisateurs vers leur tableau de bord selon leur rôle
+    Gestion des Étudiants et Groupes
+* Un étudiant est un utilisateur avec le rôle student
+* Chaque étudiant appartient à un groupe (1:N entre groupes et étudiants)
+     Gestion des Modules et Cours
+* Création, modification et suppression des cours
+* Association des cours aux modules
+     Gestion des Notes
+* Un professeur peut attribuer des notes aux étudiants
+* Une note est liée à un étudiant et un module
+    Gestion des Absences
+* Un professeur peut marquer les absences des étudiants
+* Un étudiant peut consulter ses absences
+ Technologies Utilisées
+* Laravel 10 – Framework PHP
+* MySQL – Base de données
+* Eloquent ORM – Gestion des relations entre les modèles
+* Laravel Breeze – Système d’authentification
+* Tailwind CSS – Pour le design (si utilisé dans le projet)

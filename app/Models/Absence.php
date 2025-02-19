@@ -18,11 +18,12 @@ class Absence extends Model
         'student_id',
         'group_id',
         'prof_id',
-        'heure_debut_scence',
-        'heure_fin_scence',
+        'scence',
+        'date_absence',
         'si_present',
-        'reason',   // Raison de l'absence (optionnel)
+        'reason',
     ];
+    
 
     /**
      * Relation avec le modèle User (étudiant).
