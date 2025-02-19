@@ -4,7 +4,7 @@ Ce projet est une application de gestion scolaire développée avec Laravel 10. 
      Authentification
 * Gestion des utilisateurs avec Laravel Breeze
 * Différenciation des rôles (prof et student)
-* Redirection des utilisateurs vers leur tableau de bord selon leur rôle
+* Redirection des utilisateurs vers leur tableau de bord selonn leur rôle
     Gestion des Étudiants et Groupes
 * Un étudiant est un utilisateur avec le rôle student
 * Chaque étudiant appartient à un groupe (1:N entre groupes et étudiants)
